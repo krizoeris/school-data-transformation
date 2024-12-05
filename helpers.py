@@ -4,14 +4,27 @@ import pandas as pd
 # This function extracts the data from 'educationdata.urban.org'
 # Returns a DataFrame
 def extract_data(api, year):
-    response = requests.get(url=f"{api}{year}/?state=CA")
-    print(f"Fetching data for school year {year}...")
+    results = []  
+    next_url = f"{api}{year}/?state=CA"
+    page = 1
 
-    if response.status_code != 200:
-        print(f"Failed to fetch data for {year}: {response.status_code}")
-        return pd.DataFrame() 
-    
-    results = response.json().get('results', [])
+    while next_url:
+        response = requests.get(url=next_url)
+        print(f"Fetching data for school year {year} page {page}...")
+        
+        if response.status_code != 200:
+            print(f"Failed to fetch data for {year}: {response.status_code}")
+            break
+        
+        data = response.json()
+        results.extend(data.get('results', []))
+
+        if data.get('next', None):
+            next_url = data.get('next') 
+            page += 1
+        else:
+            next_url = None
+
     return pd.DataFrame(results)
 
 # This function will transform and reshape data from long to wide format
@@ -21,14 +34,14 @@ def transform_data(data):
     # 1 Combine all DataFrames
     df = pd.concat(data, ignore_index=True)
 
-    # 2 Select and rename columns to school_id, school_name, year, total_students, teachers
+    # 2 Select and rename columns to school_id, school_name, year, students, teachers
     df = df[['school_id', 'school_name', 'year', 'enrollment', 'teachers_fte']]
-    df.columns = ['school_id', 'school_name', 'year', 'total_students', 'teachers']
+    df.columns = ['school_id', 'school_name', 'year', 'students', 'teachers']
 
-    # 3 Unpivot 'total_students' and 'teachers' column
+    # 3 Unpivot 'students' and 'teachers' column
     df = pd.melt(df,
             id_vars=['school_id', 'school_name', 'year'], 
-            value_vars=['total_students', 'teachers'], 
+            value_vars=['students', 'teachers'], 
             var_name='metric', 
             value_name='value'
         )
@@ -49,6 +62,13 @@ def transform_data(data):
 
     # 7 Use the default index
     df.reset_index(inplace=True)
+
+    # 8 Reorder columns sort by 'students' first, then 'teachers'
+    df_student_col = [col for col in df.columns if 'students' in col]
+    df_teacher_col = [col for col in df.columns if 'teachers' in col]
+    
+    df_col_order = ['school_id', 'school_name'] + df_student_col + df_teacher_col
+    df = df[df_col_order]
 
     return df
 

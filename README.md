@@ -35,7 +35,7 @@ We will follow a simple ETL pipeline process, starting with constant configurati
 
 #### Constant Configuration
 
-We start by configuring the API endpoint and School Year
+We will start by configuring the API endpoint and the school year
 
 ```
 API = "https://educationdata.urban.org/api/v1/schools/ccd/directory/"
@@ -44,7 +44,7 @@ SCHOOL_YEARS = ["2018", "2019", "2020"]
 
 #### Extract Data
 
-Since the data source is an API, we will call /GET request to extract the data, the function arguments we define here will utilize values we declared from the constant.
+Since the data source is an API, we will make a /GET request to extract the data. The function arguments we define here will use the values declared in the constants.
 
 ```
 def extract_data(api, year):
@@ -61,7 +61,7 @@ def extract_data(api, year):
 
 To reshape the format of our source data, we will use a package called `pandas`, this is included from the `requirements.txt`.
 
-In this function we will transform the data into 7 steps, you can refer to the comments from the example code below.
+In this function we will transform the data into several steps, you can refer to the comments from the example code below.
 
 ```
 import pandas as pd
@@ -99,11 +99,18 @@ df[df_num_col] = df[df_num_col].fillna(0).astype(int)
 
 # 7 Use the default index
 df.reset_index(inplace=True)
+
+# 8 Reorder columns sort by 'students' first, then 'teachers'
+df_student_col = [col for col in df.columns if 'students' in col]
+df_teacher_col = [col for col in df.columns if 'teachers' in col]
+
+df_col_order = ['school_id', 'school_name'] + df_student_col + df_teacher_col
+df = df[df_col_order]
 ```
 
 #### Load Data
 
-To export the CSV, you just have to the method `to_csv` available from `pandas` package
+To export the CSV, you just have to use the method `to_csv` that is available from the `pandas` package
 
 ```
 df.to_csv(output_file, index=False)

@@ -1,6 +1,6 @@
 from helpers import extract_data, transform_data, load_data
 
-# Here we configure the API and school year. I did not add the state CA is only required
+# Here we configure the API and school year and is only required in California state
 # Since this is a public API, I can just declare it in a constant
 API = "https://educationdata.urban.org/api/v1/schools/ccd/directory/"
 SCHOOL_YEARS = ["2018", "2019", "2020"] 
